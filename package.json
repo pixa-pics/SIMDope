@@ -1,0 +1,35 @@
+{
+  "name": "simdope",
+  "version": "1.0.0",
+  "description": "SIMDope - Color trafficking library faster than tools not mentioning it, lighting fast and around 1000 lines of code",
+  "devDependencies": {
+    "tinyify": "^4.0.0"
+  },
+  "build": {},
+  "scripts": {},
+  "author": "Affolter Matias",
+  "keywords": [
+    "simd",
+    "operations",
+    "color",
+    "maniupaltion",
+    "processing",
+    "fast",
+    "rgba",
+    "rgb",
+    "hsl",
+    "hex",
+    "uint32"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pixa-pics/SIMDope.git"
+  },
+  "engines": {
+    "node": ">=0.8.0"
+  },
+  "dependencies": {
+    "core-js": "^3.27.1"
+  }
+}
