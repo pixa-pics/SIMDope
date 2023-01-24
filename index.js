@@ -2,7 +2,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2022 - 2023 Matias Affolter
+Copyright (c) 2022 - 2022 Matias Affolter
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,10 +48,37 @@ var s = function(x){
     }
     return (i - 1 | 0)>>>0;
 };
-var PR = frnd(0.2126*3/4), // +0.1
-    PG = frnd(0.7152*3/4), // -0.2
-    PB = frnd(0.0722*3/4), // +0.1
-    PA = frnd(1.0000/4);
+
+var i = function(a, b){return Math.imul((a|0)&0xFFFFFFFF, (b|0)&0xFFFFFFFF)&0xFFFFFFFF; };
+var fr = Math.fround;
+var r = function(x){ return (0.5+x|0)&0xFFFFFFFF; };
+var p2 = function(x){ x = x|0; return (i(x|0, x|0)|0)&0xFFFFFFFF; };
+var s = function(x){
+
+    // Base cases
+    x = (x | 0)&0xFFFFFFFF;
+    if ((x|0) == 0 || (x|0) == 1){
+
+        return x | 0;
+    }
+
+    // Starting from 1, try all
+    // numbers until i*i is
+    // greater than or equal to x.
+    var i = 1;
+    var result = 1;
+
+    while ((result|0) <= (x|0)) {
+        i = (i+1|0)&0xFFFFFFFF;
+        result = (i * i | 0)&0xFFFFFFFF;
+    }
+
+    return (i - 1 | 0)&0xFFFFFFFF;
+};
+var PR = fr(0.2126*3/4), // +0.1
+    PG = fr(0.7152*3/4), // -0.2
+    PB = fr(0.0722*3/4), // +0.1
+    PA = fr(1.0000/4);
 
 var RD = 255,
     GD = 255,
@@ -718,36 +745,48 @@ Object.defineProperty(SIMDopeColor.prototype, 'hsl', {
 Object.defineProperty(SIMDopeColor.prototype, 'rgbaon4bits', {
     get: function() {
         "use strict";
-        var r = divide_four_uint(divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[3]))));
-        var g = divide_four_uint(divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[2]))));
-        var b = divide_four_uint(divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[1]))));
-        var a = divide_four_uint(divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[0]))));
+        var r = divide_128_uint(this.storage_uint8_[3]);
+        var g = divide_128_uint(this.storage_uint8_[2]);
+        var b = divide_128_uint(this.storage_uint8_[1]);
+        var a = divide_128_uint(this.storage_uint8_[0]);
 
-        return ((r << 3) | (g << 2) | (b <<  1) | (a << 0) | 0) >>>0;
+        return ((r << 3) | (g << 2) | (b <<  1) | (a << 0) | 0) >>> 0;
+    }
+});
+
+Object.defineProperty(SIMDopeColor.prototype, 'rgbaon6bits', {
+    get: function() {
+        "use strict";
+        var r = divide_85_uint(this.storage_uint8_[3]);
+        var g = divide_85_uint(this.storage_uint8_[2]);
+        var b = divide_85_uint(this.storage_uint8_[1]);
+        var a = divide_85_uint(this.storage_uint8_[0]);
+
+        return ((r ^ 0b010000) + (g ^ 0b001000) + (b ^ 0b000100) + (a ^ 0b000000) | 0) >>> 0;
     }
 });
 
 Object.defineProperty(SIMDopeColor.prototype, 'rgbaon8bits', {
     get: function() {
         "use strict";
-        var r = divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[3])));
-        var g = divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[2])));
-        var b = divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[1])));
-        var a = divide_four_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[0])));
+        var r = divide_64_uint(this.storage_uint8_[3]);
+        var g = divide_64_uint(this.storage_uint8_[2]);
+        var b = divide_64_uint(this.storage_uint8_[1]);
+        var a = divide_64_uint(this.storage_uint8_[0]);
 
-        return ((r << 6) | (g << 4) | (b <<  2) | (a << 0) | 0) >>>0;
+        return ((r << 6) | (g << 4) | (b <<  2) | (a << 0) | 0) >>> 0;
     }
 });
 
 Object.defineProperty(SIMDopeColor.prototype, 'rgbaon12bits', {
     get: function() {
         "use strict";
-        var r = divide_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[3])), 2);
-        var g = divide_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[2])), 2);
-        var b = divide_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[1])), 2);
-        var a = divide_uint(divide_four_uint(divide_four_uint(this.storage_uint8_[0])), 2);
+        var r = divide_32_uint(this.storage_uint8_[3]);
+        var g = divide_32_uint(this.storage_uint8_[2]);
+        var b = divide_32_uint(this.storage_uint8_[1]);
+        var a = divide_32_uint(this.storage_uint8_[0]);
 
-        return ((r << 9) | (g << 6) | (b <<  3) | (a << 0) | 0) >>>0;
+        return ((r << 9) | (g << 6) | (b <<  3) | (a << 0) | 0) >>> 0;
     }
 });
 
@@ -883,6 +922,49 @@ SIMDopeColor.prototype.match_with = function(color, threshold_255) {
             abs_int(this.a - color.a | 0) < (threshold_255|0));
     }
 }
+
+
+SIMDopeColor.prototype.euclidean_match_with = function(color, threshold_255) {
+    "use strict";
+
+    threshold_255 = (threshold_255 | 0) >>> 0;
+    if((threshold_255|0) == 1000) {
+
+        return true;
+    }else if((threshold_255|0) == 0){
+
+        return ((this.uint32|0) == (color.uint32|0));
+    }else {
+
+        return (s(
+            PR * p2(this.r - color.r | 0) +
+            PG * p2(this.g - color.g | 0) +
+            PB * p2(this.b - color.b | 0) +
+            PA * p2(this.a - color.a | 0) | 0
+        ) / imul(EUCLMAX, 255) | 0) < (threshold_255|0);
+    }
+};
+
+SIMDopeColor.prototype.manhattan_match_with = function(color, threshold_255) {
+    "use strict";
+
+    threshold_255 = (threshold_255 | 0) >>> 0;
+    if((threshold_255|0) == 1000) {
+
+        return true;
+    }else if((threshold_255|0) == 0){
+
+        return ((this.uint32|0) == (color.uint32|0));
+    }else {
+
+        return ((
+            i(PR, abs_int(this.r - color.r | 0)) +
+            i(PG, abs_int(this.g - color.g | 0)) +
+            i(PB, abs_int(this.b - color.b | 0)) +
+            i(PA, abs_int(this.a - color.a | 0)) | 0
+        ) / imul(MANHMAX, 255) | 0) < (threshold_255|0);
+    }
+};
 
 SIMDopeColor.prototype.set_r = function(r) {
     "use strict";
@@ -1022,6 +1104,7 @@ SIMDopeColor.match = function(base_uint8x4, added_uint8x4, threshold_255) {
 
     return base_uint8x4.match_with(added_uint8x4, threshold_255);
 }
+
 
 SIMDopeColor.blend = function(base_uint8x4, added_uint8x4, amount_alpha, should_return_transparent, alpha_addition) {
 
@@ -1331,6 +1414,9 @@ SIMDope.simdops = operators;
 SIMDope.SIMDopeColor = SIMDopeColor;
 SIMDope.SIMDopeColors = SIMDopeColors;
 
+if(module){
 
-
-module.exports = SIMDope;
+    module.exports = SIMDope;
+}
+    
+window.SIMDope = SIMDope;

@@ -66,6 +66,7 @@ color.uint32
 color.hex
 color.hsl
 color.rgbaon4bits
+color.rgbaon6bits
 color.rgbaon8bits
 color.rgbaon12bits
 color.offset
@@ -92,6 +93,8 @@ color.set(with_buffer) // Uint8Array or ArrayBuffer
 color.simplify(divider) // 1.6, 2, 4, ... Simplify means divide all, coerce to Uint, multiply them again
 color.blend_with(another_color, strength_on_one, should_return_transparent, is_alpha_addition)
 color.match_with(another_color, threshold_on_255)
+color.euclidean_match_with(another_color, threshold_on_255)
+color.manhattan_match_with(another_color, threshold_on_255)
 color.set_r(r)
 color.set_g(g)
 color.set_b(b)
