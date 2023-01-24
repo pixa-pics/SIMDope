@@ -12,16 +12,27 @@ SIMDope to which the name and more was inspired by Single Instruction Multiple D
 You need to use a buffer from an array of Uint32 for any lists, or you can look at the code and use the right class for single color, yet creating a color component from any type of data, it will enables you to check opacity, blend them unbelievably fast, and do more. A much more precise documentation should follow as it should be added somehow sooner or later.
 
 
-## How to use it?
+## How to use SIMDope.SIMDopeColor?
 
 To see how to use it, and since it is oriented onto performance, you may need to look at the source code. Yet here is the possibilities you have to create a new color object.
 
-### Create a new color object
+### Instanciate an object of the single color class
 
 ```JavaScript
-SIMDopeColor.new_zero
 
-SIMDopeColor.new_splat
+// If the first parameter is detected as an ArrayBuffer,
+// the second parameters tells the constructor
+// where to start the sub view, knowing that it will
+// multiply it by 4 since there is 4 bytes per ccolor compoment.
+
+// If the first parameters is a Uint8Array, it will use it
+SIMDopeColor(with_main_buffer, offset_4bytes) 
+
+// Create a color of r: 0, g: 0, b: 0, a: 0
+SIMDopeColor.new_zero()
+
+// Create a color of r: n, g: n, b: n, a: n
+SIMDopeColor.new_splat(n)
 
 SIMDopeColor.new_of
 
@@ -46,6 +57,7 @@ SIMDopeColor.new_hex
 ### Properties
 
 ```JavaScript
+// Get only
 color.r
 color.g
 color.b
@@ -58,9 +70,52 @@ color.rgbaon8bits
 color.rgbaon12bits
 color.offset
 color.buffer
-color.subarray
-color.set
-color.slice
+color.subarray // This doesn't copy the data, it creates a "pointer"
+color.slice // This clone the data, it creates a whole new Uint8Array
 ```
+
+### Methods
+
+```JavaScript
+
+// Get
+color.sum_rgba()
+color.sum_rgb()
+color.is_dark()
+color.is_fully_transparent()
+color.is_fully_opaque()
+color.is_not_fully_transparent()
+color.is_not_fully_opaque()
+
+// Set
+color.set(with_buffer) // Uint8Array or ArrayBuffer
+color.simplify(divider) // 1.6, 2, 4, ... Simplify means divide all, coerce to Uint, multiply them again
+color.blend_with(another_color, strength_on_one, should_return_transparent, is_alpha_addition)
+color.match_with(another_color, threshold_on_255)
+color.set_r(r)
+color.set_g(g)
+color.set_b(b)
+color.set_a(a)
+```
+### Functions
+
+```JavaScript
+
+// Create a new instance
+SIMDopeColor.with_r(color, r)
+SIMDopeColor.with_g(color, g)
+SIMDopeColor.with_b(color, b)
+SIMDopeColor.with_a(color, a)
+SIMDopeColor.with_inverse(color)
+
+// Return a result
+SIMDopeColor.with_match(color_a, color_b, threshold_on_255)
+SIMDopeColor.blend(color_a, color_b, strength_on_one, should_return_transparent, is_alpha_addition)
+```
+
+...
+
+## How to use SIMDope.SIMDopeColors?
+
 ...
 
