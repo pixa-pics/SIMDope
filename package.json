@@ -1,6 +1,6 @@
 {
   "name": "simdope",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "SIMDope ~20 kB - Color trafficking library faster than tools not mentioning it, lighting fast and around 1000 lines of code",
   "devDependencies": {
     "tinyify": "^4.0.0"
