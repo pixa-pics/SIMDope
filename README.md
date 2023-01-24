@@ -113,9 +113,48 @@ SIMDopeColor.with_match(color_a, color_b, threshold_on_255)
 SIMDopeColor.blend(color_a, color_b, strength_on_one, should_return_transparent, is_alpha_addition)
 ```
 
-...
+Please, look at the source code to know more about other cool ways of using it ...
 
 ## How to use SIMDope.SIMDopeColors?
 
-...
+### Instanciate an object of the multiple colors class
 
+```JavaScript
+
+// Create a new "list/array" of colors, you can work with 
+// both Uint32Array, it will use its buffer and
+// also Uint8Array, it will use its buffer... 
+// ArrayBuffer works too!
+
+SIMDopeColors(with_main_buffer)
+
+```
+
+### Properties
+
+```JavaScript
+// Get only
+colors.length
+colors.buffer
+```
+
+### Methods
+
+```JavaScript
+// Get
+colors.get_element(index)
+// Both start and end are an index, not an offset
+colors.subarray_uint32(start, end) 
+colors.slice_uint32(start, end)
+colors.subarray_uint8(start, end)
+colors.slice_uint8(start, end)
+
+
+// Set
+colors.set_element(index, color)
+// Both start and end are an index, not an offset
+colors.buffer_setUint8(index, number)
+colors.buffer_setUint32(index, number)
+```
+
+Please, look at the source code to know more about other cool ways of using it ...
