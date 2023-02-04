@@ -1,5 +1,21 @@
-"use strict";
 
+require("core-js/modules/es.array-buffer.slice.js");
+require("core-js/modules/es.typed-array.uint8-array.js");
+require("core-js/modules/es.typed-array.at.js");
+require("core-js/modules/es.typed-array.fill.js");
+require("core-js/modules/esnext.typed-array.find-last.js");
+require("core-js/modules/esnext.typed-array.find-last-index.js");
+require("core-js/modules/es.typed-array.set.js");
+require("core-js/modules/es.typed-array.sort.js");
+require("core-js/modules/esnext.typed-array.to-reversed.js");
+require("core-js/modules/esnext.typed-array.to-sorted.js");
+require("core-js/modules/esnext.typed-array.with.js");
+require("core-js/modules/es.typed-array.of.js");
+require("core-js/modules/es.typed-array.uint16-array.js");
+require("core-js/modules/es.regexp.exec.js");
+require("core-js/modules/es.typed-array.uint32-array.js");
+
+"use strict";
 /*
 The MIT License (MIT)
 
@@ -25,22 +41,6 @@ SOFTWARE.
  */
 
 // Order of the color component stored (in order to not meld with endianness when creating a list from a buffer, it is mostly like "reversed")
-require("core-js/modules/es.array-buffer.slice.js");
-require("core-js/modules/es.typed-array.uint8-array.js");
-require("core-js/modules/es.typed-array.at.js");
-require("core-js/modules/es.typed-array.fill.js");
-require("core-js/modules/esnext.typed-array.find-last.js");
-require("core-js/modules/esnext.typed-array.find-last-index.js");
-require("core-js/modules/es.typed-array.set.js");
-require("core-js/modules/es.typed-array.sort.js");
-require("core-js/modules/esnext.typed-array.to-reversed.js");
-require("core-js/modules/esnext.typed-array.to-sorted.js");
-require("core-js/modules/esnext.typed-array.with.js");
-require("core-js/modules/es.typed-array.of.js");
-require("core-js/modules/es.typed-array.uint16-array.js");
-require("core-js/modules/es.regexp.exec.js");
-require("core-js/modules/es.typed-array.uint32-array.js");
-
 var CONFIG_UINT8X4 = "rgba";
 var imul2 = function(a, b){
     var ah = a >>> 16;
@@ -68,12 +68,12 @@ var s = function(x){
 };
 
 var fr = Math.fround;
-var r = function(x){ return (0.5+x|0)&0xFFFFFFFF; };
-var p2 = function(x){ x = x|0; return (imul(x|0, x|0)|0)&0xFFFFFFFF; };
+var r = function(x){ return (0.5+x|0)>>>0; };
+var p2 = function(x){ x = x|0; return (imul(x|0, x|0)|0)>>>0; };
 var s = function(x){
 
     // Base cases
-    x = (x | 0)&0xFFFFFFFF;
+    x = (x | 0)>>>0;
     if ((x|0) == 0 || (x|0) == 1){
 
         return x | 0;
@@ -86,11 +86,11 @@ var s = function(x){
     var result = 1;
 
     while ((result|0) <= (x|0)) {
-        i = (i+1|0)&0xFFFFFFFF;
-        result = (i * i | 0)&0xFFFFFFFF;
+        i = (i+1|0)>>>0;
+        result = (i * i | 0)>>>0;
     }
 
-    return (i - 1 | 0)&0xFFFFFFFF;
+    return (i - 1 | 0)>>>0;
 };
 
 var PR = fr(0.2126), // +0.1
@@ -442,7 +442,7 @@ var operators = {
         return imul(n|0, 255) | 0;
     },
     clamp_uint32(n) {
-        return (n|0) & 0xFFFFFFFF;
+        return (n|0) >>> 0;
     },
     int_equal(a, b) {
         return (a | 0) == (b | 0);
@@ -1437,4 +1437,5 @@ if(module){
 }
     
 window.SIMDope = SIMDope;
+
 
