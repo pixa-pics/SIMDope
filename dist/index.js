@@ -14,7 +14,6 @@ require("core-js/modules/es.typed-array.of.js");
 require("core-js/modules/es.typed-array.uint16-array.js");
 require("core-js/modules/es.regexp.exec.js");
 require("core-js/modules/es.typed-array.uint32-array.js");
-
 "use strict";
 /*
 The MIT License (MIT)
@@ -442,7 +441,7 @@ var operators = {
         return imul(n|0, 255) | 0;
     },
     clamp_uint32(n) {
-        return (n|0) >>> 0;
+        return (n|0) & 0xFFFFFFFF;
     },
     int_equal(a, b) {
         return (a | 0) == (b | 0);
@@ -641,28 +640,21 @@ SIMDopeColor.new_bool = function(r, g, b, a) {
 };
 
 SIMDopeColor.new_uint32 = function(n) {
-    
-    var uint8ca = new Uint8Array(4);
-    uint8ca[0] = n & 0xff;
-    uint8ca[1] = (n >>> 8) & 0xff;
-    uint8ca[2] = (n >>> 16) & 0xff;
-    uint8ca[3] = (n >>> 24) & 0xff;
-    return new SIMDopeColor(uint8ca);
+
+    return new SIMDopeColor(Uint32Array.of(n|0).buffer);
 };
 
 SIMDopeColor.new_hsla = function(h, s, l, a) {
-    
 
-    h = divide_uint(h, 360);
-    s = divide_uint(s, 100);
-    l = divide_uint(l, 100);
-    a = divide_uint(a, 100);
+    h /= 360;
+    s /= 100;
+    l /= 100;
+    a /= 100;
 
-    var r, g, b = 0.0;
+    let r, g, b;
     if (s === 0) {
         r = g = b = l;
     } else {
-
         function hue_to_rgb(p, q, t) {
             if (t < 0) t += 1;
             if (t > 1) t -= 1;
@@ -671,14 +663,13 @@ SIMDopeColor.new_hsla = function(h, s, l, a) {
             if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
             return p;
         }
-        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        var p = 2 * l - q;
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
         r = hue_to_rgb(p, q, h + 1 / 3);
         g = hue_to_rgb(p, q, h);
         b = hue_to_rgb(p, q, h - 1 / 3);
     }
-
-    return SIMDopeColor.new_of(multiply_255(r), multiply_255(g), multiply_255(b), multiply_255(a));
+    return SIMDopeColor.new_of(format_uint(r * 255), format_uint(g * 255), format_uint(b * 255), format_uint(a * 255));
 };
 
 SIMDopeColor.new_hex = function (hex) {
@@ -723,7 +714,7 @@ Object.defineProperty(SIMDopeColor.prototype, 'w', {
 
 Object.defineProperty(SIMDopeColor.prototype, 'uint32', {
     get: function() { 
-        return ((this.storage_uint8_[3] << 24) | (this.storage_uint8_[2] << 16) | (this.storage_uint8_[1] <<  8) | (this.storage_uint8_[0] << 0) | 0) >>> 0;
+        return ((this.storage_uint8_[3] << 24) | (this.storage_uint8_[2] << 16) | (this.storage_uint8_[1] <<  8) | this.storage_uint8_[0] | 0) >>> 0;
     }
 });
 
@@ -731,7 +722,7 @@ Object.defineProperty(SIMDopeColor.prototype, 'hex', {
     get: function() {  return "#".concat("00000000".concat(this.uint32.toString(16)).slice(-8));}
 });
 
-Object.defineProperty(SIMDopeColor.prototype, 'hsl', {
+Object.defineProperty(SIMDopeColor.prototype, 'hsla', {
     get: function() {
         
         var r = clamp_uint8(this.storage_uint8_[3]);
@@ -755,7 +746,7 @@ Object.defineProperty(SIMDopeColor.prototype, 'hsl', {
             }
             h /= 6;
         }
-        return Uint16Array.of(multiply_uint(h, 360), multiply_uint(s, 100), multiply_uint(l, 100),multiply_uint (a, 100));
+        return Array.of(h* 360|0, s*100|0, l*100|0, a*100|0);
     }
 });
 
@@ -856,28 +847,29 @@ SIMDopeColor.prototype.simplify = function(of) {
     this.set(temp);
     return this;
 }
-
 SIMDopeColor.prototype.blend_with = function(added_uint8x4, amount_alpha, should_return_transparent, alpha_addition) {
 
+    should_return_transparent = should_return_transparent | 0;
     alpha_addition = alpha_addition | 0;
 
-    if(should_return_transparent && added_uint8x4.is_fully_transparent()) {
+    added_uint8x4.multiply_a_255(amount_alpha|0);
 
-        this.set(new Uint8Array(4));
-    }else if(should_return_transparent && this.is_fully_transparent()) {
+    if((should_return_transparent|0)!=0) {
 
-        added_uint8x4.set(new Uint8Array(4));
+        if(this.is_fully_transparent()) {
+            added_uint8x4.set(new ArrayBuffer(4));
+        }else if(added_uint8x4.is_fully_transparent()) {
+            this.set(new ArrayBuffer(4));
+        }
     }else {
 
-        added_uint8x4.multiply_a_255(amount_alpha);
-
-        var alpha = (alpha_addition|0) > 0 ?
+        var alpha = (alpha_addition|0) != 0 ?
             divide_uint(plus_uint(this.a, added_uint8x4.a), 2):
             inverse_255(divide_255(imul(inverse_255(added_uint8x4.a), inverse_255(this.a))));
 
         this.set(SIMDopeColor.merge_scale_of_255_a_fixed(
-            added_uint8x4, divide_uint(multiply_255(added_uint8x4.a), alpha),
-            this, divide_255(imul(this.a, divide_uint(multiply_255(inverse_255(added_uint8x4.a)), alpha))),
+            added_uint8x4, divide_uint(imul(added_uint8x4.a, 255), alpha),
+            this, divide_255(imul(this.a, divide_uint(imul(inverse_255(added_uint8x4.a), 255), alpha))),
             alpha
         ));
 
@@ -1437,5 +1429,7 @@ if(module){
 }
     
 window.SIMDope = SIMDope;
+
+
 
 
