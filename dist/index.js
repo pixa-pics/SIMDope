@@ -14,11 +14,11 @@ require("core-js/modules/es.typed-array.of.js");
 require("core-js/modules/es.typed-array.uint16-array.js");
 require("core-js/modules/es.regexp.exec.js");
 require("core-js/modules/es.typed-array.uint32-array.js");
-  "use strict";
+
 /*
 The MIT License (MIT)
 
-Copyright (c) 2022 - 2022 Matias Affolter
+Copyright (c) 2022 - 2023 Matias Affolter
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
+ 
+ "use strict";
 
 // Order of the color component stored (in order to not meld with endianness when creating a list from a buffer, it is mostly like "reversed")
 
@@ -1188,6 +1190,14 @@ SIMDopeColor.blend = function(base_uint8x4, added_uint8x4, amount_alpha, should_
 
     return base_uint8x4.copy().blend_with(added_uint8x4, amount_alpha, should_return_transparent, alpha_addition);
 };
+
+SIMDopeColor.prototype.merge_with_a_fixed = function(t2, alpha) {
+    var uint8a = this.subarray;
+    uint8a[0] = clamp_uint8(alpha);
+    uint8a[1] = plus_uint(this.b, t2.b);
+    uint8a[2] = plus_uint(this.g, t2.g);
+    uint8a[3] = plus_uint(this.r, t2.r);
+}
 
 
 SIMDopeColor.merge_scale_of_255_a_fixed = function(t1, of1, t2, of2, alpha) {
