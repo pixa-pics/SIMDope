@@ -162,16 +162,35 @@ colors.buffer_setUint32(index, number)
 
 ```JavaScript
 
-var base_rgba_colors_for_blending = new Uint32Array(Uint8Array.from(imagedata.data).reverse().buffer).reverse(); // This is because we want each color component to be written from end to start (we call this way of writting the littleEndian), look: the first reverse method will effectively transform rgba into abgr yet it will also reverse the indexes of abgr groups that's why when we do the second reverse method call upon uint32 they will not re-order except by group of 4 bytes (either rgba or agbr). This is how we do to reverse each group of 4 bytes without changing group's position or index. It put byte's group indexes back into place on the last call and reverse each group on the first call #upsidedownsmiley
+var base_rgba_colors_for_blending = new Uint32Array(Uint8Array.from(imagedata.data).reverse().buffer).reverse(); 
+// This is because we want each color component to be written from end
+// to start (we call this way of writting the littleEndian), look: the
+// first reverse method will effectively transform rgba into abgr yet it
+// will also reverse the indexes of abgr groups that's why when we do the
+// second reverse method call upon uint32 they will not re-order except by
+// group of 4 bytes (either rgba or agbr). This is how we do to reverse
+// each group of 4 bytes without changing group's position or index.
+// It put byte's group indexes back into place on the last call and
+// reverse each group on the first call #upsidedownsmiley
 
 var white = SIMDopeColor.new_of(255, 255, 255, 255);
 var green = SIMDopeColor.new_of(0, 255, 0, 255);
 var red = SIMDopeColor.new_of(255, 0, 0, 255);
 var SIMDope_final_with_colors = SIMDopeColors(base_rgba_colors_for_blending);
-    SIMDope_final_with_colors.get_element(0).blend_with(white.copy(), 192, false, false) // Blend the color at index 0 with a copy of the color white with strength 192 on 255 because both will be rewritten without returning transparent if the second color is transparent (set it to true to erase both color of the given color is transparent) and without increasig opacity (set it to true to blend colors that should sum-up instead of blend together)
-var SIMDope_final_with_colors.get_element(1).blend_with(white.copy(), 0.25*255, false, false) // Blend the second color with a copy of the color white with a strength of 25% ...
+    SIMDope_final_with_colors.get_element(0).blend_with(white.copy(), 192, false, false) 
 
-// Assuming the third color of the list is transparent, it will then be fully opaque because with sum-up opacity (alpha as it is "a")
+// Blend the color at index 0 with a copy of the color white with
+// strength 192 on 255 because both will be rewritten without returning
+// transparent if the second color is transparent (set it to true to
+// erase both color of the given color is transparent) and without
+// increasig opacity (set it to true to blend colors that should sum-up
+// instead of blend together)
+
+var SIMDope_final_with_colors.get_element(1).blend_with(white.copy(), 0.25*255, false, false) 
+// Blend the second color with a copy of the color white with a strength of 25% ...
+
+// Assuming the third color of the list is transparent, it will then be
+// fully opaque because with sum-up opacity (alpha as it is "a")
 SIMDope_final_with_colors.get_element(2)
     .blend_with(white.copy(), 0.25*255, false, true)
     .blend_with(blue.copy(), 0.75*255, false, true)
@@ -189,11 +208,22 @@ var purple_alpha_but_from_uint32 = SIMDopeColor.new_uint32(purple_uint32).a;
     // purple_copy is not affected by the change
     
 var some_uint32array_colors = SIMDope_final_with_colors.subarray_uint32(0, 3);
-var some_colors = new SIMDopeColors(some_uint32array_colors.buffer); // the keyword "new" is optional as well as the call of the property "buffer" (.buffer is optional too, it is detected automatically)
+var some_colors = new SIMDopeColors(some_uint32array_colors.buffer); 
+   // the keyword "new" is optional as well as the call of the property
+   // "buffer" (.buffer is optional too, it is detected automatically)
   
-  // As we've called a subarray, we share the same colors within "some_colors" and "SIMDope_final_with_colors", it means that modifying one will affect the other(s), if you want to create a copy (and not a reference) you have to use ".slice_uint32(0, 3)" and it will be copied instead of pointed onto.
+  // As we've called a subarray, we share the same colors within
+  // "some_colors" and "SIMDope_final_with_colors", it means that
+  // modifying one will affect the other(s), if you want to create
+  // a copy (and not a reference) you have to use ".slice_uint32(0, 3)"
+  // and it will be copied instead of pointed onto.
   
-  // Since the blend method doesn't return the color if you work on a copy and want to set the color back in the list, you can use the code below (it is very very fast too, yet you may still better use direct editting as changes can operate from multiple SIMDopeColors instance onto the same "buffer" which is an array of bytes)
+  // Since the blend method doesn't return the color if you work
+  // on a copy and want to set the color back in the list, you can
+  // use the code below (it is very very fast too, yet you may still
+  // better use direct editting as changes can operate from multiple
+  // SIMDopeColors instance onto the same "buffer" which is an array of bytes)
+  
   some_colors.set_uint32_element(0, purple.uint32);
   some_colors.set_uint32_element(1, purple.uint32);
 
