@@ -834,7 +834,10 @@ Object.defineProperty(SIMDopeColor.prototype, 'set', {
 
         if(with_buffer instanceof SIMDopeColor) {
 
-            this.storage_uint8_.set(new Uint8Array(with_buffer.buffer, with_buffer.offset, rgba_bytes));
+            this.storage_uint8_[0] = with_buffer.a;
+            this.storage_uint8_[1] = with_buffer.b;
+            this.storage_uint8_[2] = with_buffer.g;
+            this.storage_uint8_[3] = with_buffer.r;
 
         }else if("subarray" in with_buffer) {
 
@@ -1504,7 +1507,3 @@ if(module){
 }
     
 window.SIMDope = SIMDope;
-
-
-
-
