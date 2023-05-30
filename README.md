@@ -4,17 +4,22 @@
 
 ![MIT](https://img.shields.io/badge/license-MIT-green)
 
-![UraniumJS branding logo](https://raw.githubusercontent.com/pixa-pics/SIMDope/main/Branding.png) ![npm](https://img.shields.io/npm/dw/simdope?label=NPM%20DOWNLOAD&logo=NPM)
+![SIMDope branding logo](https://raw.githubusercontent.com/pixa-pics/SIMDope/main/Branding.png)
 
+SIMDOPE is a library that enhances processing speed of colors by using an array of bytes with view of it using a secondary classes. The first class, called SIMDOPE.Colors, should be used for any list of colors because it allows for faster processing and creation. The second class, called SIMDope.Color, is used to transform, convert, and operate on a single color. It's important to note that when you retrieve an element from a new instance of the SIMDope.Colors class, it's not copied (That's also why it's fast no work to do for the garbage collector).
 
-SIMDOPE is a library that enhances processing speed of colors by using an array of bytes with view of it using a secondary classes. The first class, called SIMDOPE.Colors, should be used for any list of colors because it allows for faster processing and creation. The second class, called SIMDope.Color, is used to transform, convert, and operate on a single color. It's important to note that when you retrieve an element from a new instance of the SIMDope.Colors class, it's not copied (That's also why it's fast no work to do for the garbage collector). 
+## Performance
+
+![SIMDope performance in use](https://raw.githubusercontent.com/pixa-pics/SIMDope/main/Performance.png) ![npm](https://img.shields.io/npm/dw/simdope?label=NPM%20DOWNLOAD&logo=NPM)
+
 
 Instead, gracefully, a view of the TypedArray colors data is obtained (and you can do `new SIMDOPE.Colors(imagedata || new Uint32Array(16)))`, which allows for faster operation. This means that any changes made to the retrieved element will be reflected in the original TypedArray, it already is optimized for performance.
 
 Then it operate simply mostly on four Uint8 elements inside it's method's functionalities and single Uint32 for outside operations onto the array of colors.
 
-
-
+## FUN FACT
+ > Through our color quantization alg. (soon on NPM) we can go from 250K colors to 1K in just 0.3-0.4 sec. BLENDING QUITE ALL THEM TOGETHER #MADNESS
+ > A canvas of 512x512 is ~250k pixels... but this lib. handle multiple millions ops per second! Not yet compared but for sure between 4-16x faster than most other libraries (thanks SIMD JS & ASM JS)!
 
 
 
@@ -37,9 +42,6 @@ Color(with_main_buffer, offset_4bytes)
 // Create a color of r: 0, g: 0, b: 0, a: 0
 Color.new_zero()
 
-// Create a color of r: n, g: n, b: n, a: n
-Color.new_splat(n)
-
 Color.new_of(r, g, b, a)
 
 Color.new_safe_of(r, g, b, a)
@@ -61,6 +63,7 @@ Color.new_hex(hex_anything)
 ### Properties
 
 ```JavaScript
+
 // Get only
 color.r
 color.g
@@ -68,7 +71,9 @@ color.b
 color.a
 color.uint32
 color.hex
-color.hsl
+color.hsla
+color.lab
+color.ycbcra
 color.skin // Boolean is skin
 color.tail // Tail, usefull for chaining multiple color before blending witin the object AND list at once
 color.rgbaon4bits
@@ -76,9 +81,11 @@ color.rgbaon6bits
 color.rgbaon8bits
 color.rgbaon12bits
 color.offset
-color.buffer
-color.subarray // It doesn't copy the data, it creates a "pointer" instance
-color.slice // This clone the data, it creates a whole new Uint8Array
+
+// Private properties (see methods to access them)
+color._buffer
+color._subarray // It doesn't copy the data, it creates a "pointer" instance
+color._slice // This clone the data, it creates a whole new Uint8Array
 ```
 
 ### Methods
@@ -86,6 +93,9 @@ color.slice // This clone the data, it creates a whole new Uint8Array
 ```JavaScript
 
 // Get
+color.get_buffer()
+color.get_subarray()
+color.get_slice()
 color.sum_rgba()
 color.sum_rgb()
 color.is_dark()
@@ -107,6 +117,7 @@ color.blend_with_tails(is_alpha_addition);
 color.match_with(another_color, threshold_on_255)
 color.euclidean_match_with(another_color, threshold_float)
 color.manhattan_match_with(another_color, threshold_float)
+color.cie76_match_with(another_color, threshold_float)
 color.set_r(r)
 color.set_g(g)
 color.set_b(b)
@@ -136,7 +147,7 @@ Please, look at the source code to know more about other cool ways of using it .
 
 ## How to use SIMDope.Colors?
 
-### Instanciate an object of the multiple colors class
+### Instantiate an object of the multiple colors class
 
 ```JavaScript
 
@@ -161,7 +172,10 @@ colors.buffer
 
 ```JavaScript
 // Get
-colors.get_element(index)
+colors.get_element(index, old_color_object_optional_faster) 
+// When you get an el. and modify it, it modify it in the array also !IMPORTANT
+// Just use .copy() if you need to keep it original !IMPORTANT
+
 // Both start and end are an index, not an offset
 colors.subarray_uint32(start, end) 
 colors.slice_uint32(start, end)
@@ -186,8 +200,8 @@ var red = Color.new_of(255, 0, 0, 255);
 
 var simdope_my_colors = Colors(imagedata);
     // That rewrite the inner data of our array but also white if we don't copy it
-    simdope_my_colors.get_element(0).blend_with(white.copy(), 192, false, false)
-    IMDope_final_with_colors.get_element(1).blend_with(white, 0.25*255, false, false) 
+    simdope_my_colors.get_element(0).blend_with(white.copy(), 192, false, false);
+    simdope_my_colors.get_element(1).blend_with(white, 0.25*255, false, false) ;
 
 simdope_my_colors.get_element(2)
     .blend_with(white.copy(), 0.25*255, false, true)

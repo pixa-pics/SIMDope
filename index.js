@@ -81,9 +81,28 @@ var SIMDOPE = (function (){
         AD = 255;
     var XD = Uint8Array.of(RD, GD, BD, AD);
 
+    const LAB_K = 18,
+        LAB_Xn = fr(0.96422),
+        LAB_Yn = 1,
+        LAB_Zn = fr(0.82521),
+        LAB_t0 = fr(4 / 29),
+        LAB_t1 = fr(6 / 29),
+        LAB_t2 = 3 * LAB_t1 * LAB_t1,
+        LAB_t3 = LAB_t1 * LAB_t1 * LAB_t1;
+
+    function rgb2lrgb(x) {
+        "use strict";
+        return (x /= 255) <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    }
+    function xyz2lab(t) {
+        "use strict";
+        return t > LAB_t3 ? Math.pow(t, 1 / 3) : t / LAB_t2 + LAB_t0;
+    }
+
 // Euclidean or Manhattan color distance
     var EUCLMAX = (s(PR*RD*RD + PG*GD*GD + PB*BD*BD | 0) | 0) >>> 0;
     var MANHMAX = (PR*RD + PG*GD + PB*BD|0) >>> 0;
+    var LABMAX = s(100*100 + 128*128 + 128*128|0) >>> 0;
     var FLOAT3P = fr(3/100);
     var FLOATONE = fr(1);
 
@@ -561,7 +580,7 @@ var SIMDOPE = (function (){
     var Color = function(with_main_buffer, offset_4bytes, tail){
         "use strict";
         if (!(this instanceof Color)) {
-            return new Color(with_main_buffer, offset_4bytes);
+            return new Color(with_main_buffer, offset_4bytes, tail);
         }
         offset_4bytes = offset_4bytes | 0;
         this.storage_uint8_ = new Uint8Array( with_main_buffer, multiply_uint_4(offset_4bytes), max_int(min_int(rgba_bytes, minus_int(with_main_buffer.byteLength, multiply_uint_4(offset_4bytes))), 0));
@@ -738,13 +757,43 @@ var SIMDOPE = (function (){
         },
         enumerable: false,
         configurable: false
-});
+    });
 
     Object.defineProperty(Color.prototype, 'hex', {
         get: function() {  "use strict"; return "#".concat("00000000".concat(this.uint32.toString(16)).slice(-8));},
         enumerable: false,
         configurable: false
-});
+    });
+
+    Object.defineProperty(Color.prototype, 'ycbcra', {
+        get: function() {
+            "use strict";
+            var y = ( .299 * this.r + .587 * this.g  +  0.114 * this.b) + 0,
+                cb = ( -.169 * this.r + -.331 * this.g +  0.500 * this.b) + 128,
+                cr = ( .500 * this.r + -.419 * this.g +  -0.081 * this.b) + 128,
+                a = this.a;
+            return Uint16Array.of(y|0, cb|0, cr|0, a|0);
+        },
+        enumerable: false,
+        configurable: false
+    });
+
+    Object.defineProperty(Color.prototype, 'lab', {
+        get: function() {
+            "use strict";
+            var r = rgb2lrgb(this.r),
+                g = rgb2lrgb(this.g),
+                b = rgb2lrgb(this.b),
+                y = xyz2lab((0.2225045 * r + 0.7168786 * g + 0.0606169 * b) / LAB_Yn), x, z;
+            if (r === g && g === b) x = z = y; else {
+                x = xyz2lab((0.4360747 * r + 0.3850649 * g + 0.1430804 * b) /LAB_Xn);
+                z = xyz2lab((0.0139322 * r + 0.0971045 * g + 0.7141733 * b) / LAB_Zn);
+            }
+            return Float32Array.of(116 * y - 16, 500 * (x - y), 200 * (y - z), this.a);
+        },
+        enumerable: false,
+        configurable: false
+    });
 
     Object.defineProperty(Color.prototype, 'hsla', {
         get: function() {
@@ -774,7 +823,7 @@ var SIMDOPE = (function (){
         },
         enumerable: false,
         configurable: false
-});
+    });
 
 
     Object.defineProperty(Color.prototype, 'rgbaon4bits', {
@@ -784,7 +833,7 @@ var SIMDOPE = (function (){
         },
         enumerable: false,
         configurable: false
-});
+    });
 
     Object.defineProperty(Color.prototype, 'rgbaon6bits', {
         get: function() {
@@ -793,7 +842,7 @@ var SIMDOPE = (function (){
         },
         enumerable: false,
         configurable: false
-});
+    });
 
     Object.defineProperty(Color.prototype, 'rgbaon8bits', {
         get: function() {
@@ -802,7 +851,7 @@ var SIMDOPE = (function (){
         },
         enumerable: false,
         configurable: false
-});
+    });
 
     Object.defineProperty(Color.prototype, 'rgbaon12bits', {
         get: function() {
@@ -811,24 +860,28 @@ var SIMDOPE = (function (){
         },
         enumerable: false,
         configurable: false
-});
+    });
 
     Object.defineProperty(Color.prototype, 'offset', {
         get: function() { "use strict"; return divide_4_uint(this.storage_uint8_.byteOffset);},
         enumerable: false,
         configurable: false
-});
-
-    Object.defineProperty(Color.prototype, 'buffer', {
+    });
+    Object.defineProperty(Color.prototype, '_slice', {
+        get: function() {  "use strict"; return this.storage_uint8_.slice(0, rgba_bytes);},
+        enumerable: false,
+        configurable: false
+    });
+    Object.defineProperty(Color.prototype, '_buffer', {
         get: function() {  "use strict"; return this.storage_uint8_.buffer.slice(this.storage_uint8_.byteOffset, plus_uint(this.storage_uint8_.byteOffset, rgba_bytes)); },
         enumerable: false,
         configurable: false
-});
-    Object.defineProperty(Color.prototype, 'subarray', {
-        get: function() {  "use strict"; return this.storage_uint8_.subarray(0, rgba_bytes); },
+    });
+    Object.defineProperty(Color.prototype, '_subarray', {
+        get: function() {  "use strict"; return this.storage_uint8_; },
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Color.prototype, 'set', {
         get: function() {  "use strict"; return function(with_buffer) {
             "use strict";
@@ -843,16 +896,16 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Color.prototype, 'set_from_array', {
         get: function() {  "use strict"; return function(with_buffer) {
             "use strict";
 
-            this.storage_uint8_.set(with_buffer.subarray(0, 4), 0);
+            this.storage_uint8_.set(with_buffer.subarray, 0);
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Color.prototype, 'set_from_simdope', {
         get: function() {  "use strict"; return function(with_buffer) {
             "use strict";
@@ -864,7 +917,16 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
+    Object.defineProperty(Color.prototype, 'set_from_buffer', {
+        get: function() {  "use strict"; return function(with_main_buffer, offset_4bytes) {
+            "use strict";
+            this.storage_uint8_ = new Uint8Array( with_main_buffer, multiply_uint_4(offset_4bytes), max_int(min_int(rgba_bytes, minus_int(with_main_buffer.byteLength, multiply_uint_4(offset_4bytes))), 0));
+            this.tail_ = undefined;
+        }},
+        enumerable: false,
+        configurable: false
+    });
     Object.defineProperty(Color.prototype, 'get_tail_and_reset', {
         get: function() {  "use strict"; return function() {
             "use strict";
@@ -874,7 +936,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Color.prototype, 'reset_tail', {
         get: function() {  "use strict"; return function() {
             "use strict";
@@ -895,7 +957,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Color.prototype, 'simplify', {
         get: function() {  "use strict"; return function(of) {
             "use strict";
@@ -907,7 +969,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Color.prototype, 'normalize', {
         get: function() {  "use strict"; return function() {
             "use strict";
@@ -918,7 +980,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
 
     Object.defineProperty(Color.prototype, 'set_out_of', {
         get: function() {  "use strict"; return function(w, x, y, z) {
@@ -931,33 +993,32 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
-    Object.defineProperty(Color.prototype, 'slice', {
-        get: function() {  "use strict"; return this.storage_uint8_.slice(0, rgba_bytes);},
-        enumerable: false,
-        configurable: false
-});
+    });
 
     Object.defineProperty(Color.prototype, 'skin', {
         get: function() {
             "use strict";
-            var rgb_sum = (this.b + this.g + this.r | 0) >>> 0;
-            if((rgb_sum|0)>0) {
-                TEMPUINT8AX4[0] = clamp_int((3 * this.r | 0) / rgb_sum | 0, 0, 255);
-                TEMPUINT8AX4[1] = clamp_int((3 * this.g | 0) / rgb_sum | 0, 0, 255);
-                TEMPUINT8AX4[2] = clamp_int((3 * this.b | 0) / rgb_sum | 0, 0, 255);
-                var rgb_sum_p2 = p2(((TEMPUINT8AX4[0] + TEMPUINT8AX4[1] + TEMPUINT8AX4[2] | 0) >>> 0) | 0) >>> 0;
-
-                return  (fr(TEMPUINT8AX4[0] / TEMPUINT8AX4[1]) > SVX[0]) &&
-                        (fr(((TEMPUINT8AX4[0] * TEMPUINT8AX4[2] | 0) >>> 0) / rgb_sum_p2) > SVX[1]) &&
-                        (fr(((TEMPUINT8AX4[0] * TEMPUINT8AX4[1] | 0) >>> 0) / rgb_sum_p2) > SVX[2]);
-            }
-
-            return false;
+            var ycbcra = this.ycbcra;
+            var cb = ycbcra[1], cr = ycbcra[2];
+            return (80 <= cb) && (cb <= 120) && (133 <= cr) && (cr <= 173);
         },
         enumerable: false,
         configurable: false
     });
+
+
+    Color.prototype.get_subarray = function () {
+        "use strict";
+        return this._subarray;
+    }
+    Color.prototype.get_slice = function () {
+        "use strict";
+        return this._slice;
+    }
+    Color.prototype.get_buffer = function () {
+        "use strict";
+        return this._buffer;
+    }
 
     Color.blend_all = function (base, colors, amounts) {
         "use strict";
@@ -1025,19 +1086,21 @@ var SIMDOPE = (function (){
             }else if(added_uint8x4.is_fully_transparent()) {
                 this.set_from_array(uint8a0);
             }
-
-        }else {
-
-            amount_alpha = clamp_uint8((alpha_addition | 0) != 0 ?
-                divide_2_uint(plus_uint(this.a, added_uint8x4.a)) :
-                inverse_255(divide_255(multiply_uint(inverse_255(added_uint8x4.a), inverse_255(this.a)))));
-
-            return Color.merge_scale_of_255_a_fixed(
-                added_uint8x4, divide_uint(multiply_255(added_uint8x4.a), amount_alpha),
-                this, divide_255(multiply_uint(this.a, divide_uint(multiply_255(inverse_255(added_uint8x4.a)), amount_alpha))),
-                amount_alpha
-            );
+            return this;
         }
+
+        amount_alpha = clamp_uint8((alpha_addition | 0) != 0 ?
+            divide_2_uint(plus_uint(this.a, added_uint8x4.a)) :
+            inverse_255(divide_255(multiply_uint(inverse_255(added_uint8x4.a), inverse_255(this.a)))));
+
+        Color.merge_scale_of_255_a_fixed(
+            added_uint8x4, divide_uint(multiply_255(added_uint8x4.a), amount_alpha),
+            this, divide_255(multiply_uint(this.a, divide_uint(multiply_255(inverse_255(added_uint8x4.a)), amount_alpha))),
+            amount_alpha
+        );
+
+        return this;
+
     };
 
 
@@ -1132,81 +1195,95 @@ var SIMDOPE = (function (){
         ) / MANHMAX) < fr(threshold_float*TEMPFLOAT32X1[1]));
     };
 
+    Color.prototype.cie76_match_with = function(color, threshold_float) {
+        "use strict";
+        threshold_float = fr(threshold_float);
+        TEMPFLOAT32X1[0] = fr(FLOATONE - fr(abs_int(this.a - color.a|0)/XD[3]));
+        TEMPFLOAT32X1[1] = fr(TEMPFLOAT32X1[0] * TEMPFLOAT32X1[0] - FLOAT3P);
+        var lab1 = this.lab, lab2 = color.lab;
+
+        return (fr(s(
+            p2(lab1[0] - lab2[0]) +
+            p2(lab1[1] - lab2[1]) +
+            p2(lab1[2] - lab2[2]) | 0
+        ) / LABMAX) < fr(threshold_float*TEMPFLOAT32X1[1]));
+    };
+
     Color.prototype.set_r = function(r) {
 
         "use strict";
-        this.subarray[3] = clamp_uint8(r);
+        this._subarray[3] = clamp_uint8(r);
         return this;
     };
     Color.prototype.set_g = function(g) {
 
         "use strict";
-        this.subarray[2] = clamp_uint8(g);
+        this._subarray[2] = clamp_uint8(g);
         return this;
     };
     Color.prototype.set_b = function(b) {
 
         "use strict";
-        this.subarray[1] = clamp_uint8(b);
+        this._subarray[1] = clamp_uint8(b);
         return this;
     };
     Color.prototype.set_a = function(a) {
 
         "use strict";
-        this.subarray[0] = clamp_uint8(a);
+        this._subarray[0] = clamp_uint8(a);
         return this;
     };
     Color.prototype.to_greyscale = function(a) {
 
         "use strict";
-        var subarray = this.subarray;
+        var subarray = this._subarray;
         subarray[1] = subarray[2] = subarray[3] = clamp_uint8(this.sum_rgb() / 3 | 0);
         return this;
     };
     Color.prototype.to_greyscale_luma = function(a) {
 
         "use strict";
-        var subarray = this.subarray;
+        var subarray = this._subarray;
         subarray[1] = subarray[2] = subarray[3] = clamp_uint8((this.r * PX[0] + this.g * PX[1] + this.b * PX[2]) / 3 | 0);
         return this;
     };
     Color.prototype.multiply_a_255 = function(n) {
 
         "use strict";
-        this.subarray[0] = clamp_uint8(divide_255(multiply_uint(this.a|0, n|0)));
+        this._subarray[0] = clamp_uint8(divide_255(multiply_uint(this.a|0, n|0)));
     };
     Color.prototype.copy = function() {
         "use strict";
-        return new Color(this.slice.buffer);
+        return new Color(this._slice.buffer);
     };
 
     Color.with_r = function(t, r) {
         "use strict";
-        var ta = t.slice;
+        var ta = t.get_slice();
         ta[3] = clamp_uint8(r);
         return new Color(ta.buffer);
     };
     Color.with_g = function(t, g) {
         "use strict";
-        var ta = t.slice;
+        var ta = t.get_slice();
         ta[2] = clamp_uint8(g);
         return new Color(ta.buffer);
     };
     Color.with_b = function(t, b) {
         "use strict";
-        var ta = t.slice;
+        var ta = t.get_slice();
         ta[1] = clamp_uint8(b);
         return new Color(ta.buffer);
     };
     Color.with_a = function(t, a) {
         "use strict";
-        var ta = t.slice;
+        var ta = t.get_slice();
         ta[0] = clamp_uint8(a);
         return new Color(ta.buffer);
     };
     Color.with_inverse = function(t) {
         "use strict";
-        var ta = t.slice;
+        var ta = t.get_slice();
         ta[3] = inverse_255(ta[3]);
         ta[2] = inverse_255(ta[2]);
         ta[1] = inverse_255(ta[1]);
@@ -1228,7 +1305,7 @@ var SIMDOPE = (function (){
     Color.prototype.merge_with_a_fixed = function(t2, alpha) {
         "use strict";
         alpha = clamp_uint8(alpha);
-        var subarray = this.subarray;
+        var subarray = this._subarray;
         subarray[0] = clamp_uint8(alpha);
         subarray[1] = plus_uint(this.b, t2.b);
         subarray[2] = plus_uint(this.g, t2.g);
@@ -1243,16 +1320,27 @@ var SIMDOPE = (function (){
         of2 = clamp_uint8(of2);
         alpha = clamp_uint8(alpha);
 
-        Color.scale_rgb_of_on_255(t1, of1, of1, of1);
-        Color.scale_rgb_of_on_255(t2, of2, of2, of2);
-        Color.merge_with_a_fixed(t1, t2, alpha);
-        return t1;
+        var subarray1 = t1.get_subarray();
+        var subarray2 = t2.get_subarray();
+        subarray1[1] = divide_255(multiply_uint(t1.b, of1));
+        subarray1[2] = divide_255(multiply_uint(t1.g, of1));
+        subarray1[3] = divide_255(multiply_uint(t1.r, of1));
+        subarray2[1] = divide_255(multiply_uint(t2.b, of2));
+        subarray2[2] = divide_255(multiply_uint(t2.g, of2));
+        subarray2[3] = divide_255(multiply_uint(t2.r, of2));
+        subarray1[0] = clamp_uint8(alpha);
+        subarray1[1] = plus_uint(t1.b, t2.b);
+        subarray1[2] = plus_uint(t1.g, t2.g);
+        subarray1[3] = plus_uint(t1.r, t2.r);
+        subarray2[0] = subarray1[0];
+        subarray2[1] = subarray1[1];
+        subarray2[2] = subarray1[2];
+        subarray2[3] = subarray1[3];
     }
 
     Color.scale_rgb_of_on_255 = function(t, of_r, of_g, of_b) {
         "use strict";
-        var subarray = t.subarray;
-        subarray[0] = 0;
+        var subarray = t.get_subarray();
         subarray[1] = divide_255(multiply_uint(t.b, of_b));
         subarray[2] = divide_255(multiply_uint(t.g, of_g));
         subarray[3] = divide_255(multiply_uint(t.r, of_r));
@@ -1260,12 +1348,12 @@ var SIMDOPE = (function (){
 
     Color.merge_with_a_fixed = function(t1, t2, alpha) {
         "use strict";
-        var subarray = t1.subarray;
+        var subarray = t1.get_subarray();
         subarray[0] = clamp_uint8(alpha);
         subarray[1] = plus_uint(t1.b, t2.b);
         subarray[2] = plus_uint(t1.g, t2.g);
         subarray[3] = plus_uint(t1.r, t2.r);
-        t2.set_from_simdope(t1);
+        t2.set_from_array(subarray);
     }
 
     function alpha_add(a, b) {
@@ -1286,18 +1374,18 @@ var SIMDOPE = (function (){
     }
 
     Color.blend_all_four = function(from_a,
-                                           from_b,
-                                           from_c,
-                                           from_d,
-                                           with_a,
-                                           with_b,
-                                           with_c,
-                                           with_d,
-                                           amount_alpha_a,
-                                           amount_alpha_b,
-                                           amount_alpha_c,
-                                           amount_alpha_d,
-                                           should_return_transparent, alpha_addition) {
+                                    from_b,
+                                    from_c,
+                                    from_d,
+                                    with_a,
+                                    with_b,
+                                    with_c,
+                                    with_d,
+                                    amount_alpha_a,
+                                    amount_alpha_b,
+                                    amount_alpha_c,
+                                    amount_alpha_d,
+                                    should_return_transparent, alpha_addition) {
         "use strict";
         alpha_addition = alpha_addition | 0;
         should_return_transparent = should_return_transparent | 0;
@@ -1432,12 +1520,12 @@ var SIMDOPE = (function (){
         get: function() {  "use strict"; return this.storage_uint32_array_.length; },
         enumerable: false,
         configurable: false
-});
-    Object.defineProperty(Colors.prototype, 'buffer', {
-        get: function() {  "use strict"; return this.storage_uint8_array_.buffer; },
+    });
+    Object.defineProperty(Colors.prototype, '_buffer', {
+        get: function() {  "use strict"; return this.storage_; },
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'buffer_setUint8', {
         get: function() {  "use strict"; return function (i, n) {
             "use strict";
@@ -1445,7 +1533,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'get_deduplicated_uint32a', {
         get: function() {  "use strict"; return function (i) {
             "use strict";
@@ -1453,7 +1541,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'buffer_getUint8', {
         get: function() {  "use strict"; return function (i) {
             "use strict";
@@ -1461,7 +1549,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'buffer_getUint8a', {
         get: function() {  "use strict"; return function (i, n) {
             "use strict";
@@ -1472,7 +1560,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'buffer_setUint32', {
         get: function() {  "use strict"; return function (i, n) {
             "use strict";
@@ -1480,7 +1568,7 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'buffer_getUint32', {
         get: function() {  "use strict"; return function (i) {
             "use strict";
@@ -1488,34 +1576,39 @@ var SIMDOPE = (function (){
         }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'subarray_uint32', {
         get: function() {  "use strict"; return function (start, end){ "use strict"; start = start|0; end = end | 0; end = end || this.length; return this.storage_uint32_array_.subarray(start, end); }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'slice_uint32', {
         get: function() {  "use strict"; return function (start, end){ "use strict"; start = start|0; end = end | 0; end = end || this.length; return this.storage_uint32_array_.slice(start, end); }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'subarray_uint8', {
         get: function() {  "use strict"; return function (start, end){ "use strict"; start = start | 0; end = end | 0; return this.storage_uint8_array_.subarray(multiply_uint_4(start), multiply_uint_4(end)); }},
         enumerable: false,
         configurable: false
-});
+    });
     Object.defineProperty(Colors.prototype, 'slice_uint8', {
         get: function() {  "use strict"; return function (start, end){ "use strict"; start = start | 0; end = end | 0; return this.storage_uint8_array_.slice(multiply_uint_4(start), multiply_uint_4(end)); }},
         enumerable: false,
         configurable: false
-});
+    });
 
     Colors.prototype.get_image_data = function (){
         return new Uint8Array(this.slice_uint32(0, this.length).reverse().buffer).reverse();
     }
-    Colors.prototype.get_element = function (i) {
+    Colors.prototype.get_element = function (i, old_object) {
         "use strict";
-        return new Color(this.buffer, i|0);
+        if(typeof old_object != "undefined") {
+            old_object.set_from_buffer(this._buffer, i|0);
+            return old_object;
+        }else {
+            return new Color(this._buffer, i|0);
+        }
     }
     Colors.prototype.subarray = function (i, n) {
         "use strict";
@@ -1553,7 +1646,6 @@ var SIMDOPE = (function (){
         n = n | 0;
         return this.buffer_getUint8a(multiply_uint_4(i), n).buffer;
     }
-
 
     SIMDOPE.simdops = ops;
     SIMDOPE.Color = Color;

@@ -1,7 +1,7 @@
 {
   "name": "simdope",
-  "version": "3.1.0",
-  "description": "SIMDope 🎨 ~21.6 kB minified (6kB Gzipped and 0 dep.) - Color trafficking library faster than tools not mentioning it, lighting fast and around 1000 lines of code",
+  "version": "3.4.1",
+  "description": "SIMDope 🎨 - Color trafficking library faster than tools not mentioning it, lighting fast and around 1500 lines of code (~7kB Gzipped and 0 dep.)",
   "devDependencies": {
     "tinyify": "^4.0.0"
   },
@@ -12,6 +12,10 @@
     "simd",
     "operations",
     "color",
+    "image",
+    "img",
+    "canvas",
+    "data",
     "blend",
     "mix",
     "alpha",
@@ -23,8 +27,12 @@
     "rgba",
     "rgb",
     "hsl",
+    "cie",
+    "lab",
+    "delta",
     "hex",
-    "uint32"
+    "uint32",
+    "uint8"
   ],
   "license": "MIT",
   "repository": {
@@ -35,7 +43,6 @@
     "node": ">=0.8.0"
   },
   "dependencies": {
-    "asc": "^2.0.3",
     "core-js": "^3.27.1"
   }
 }
