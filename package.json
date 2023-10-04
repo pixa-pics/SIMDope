@@ -1,6 +1,6 @@
 {
   "name": "simdope",
-  "version": "5.5.5",
+  "version": "5.6.0",
   "description": "SIMDope 🎨 - Color trafficking library faster than tools not mentioning it, lighting fast and around 1700 lines of code (~7kB Gzipped and 0 dep.)",
   "devDependencies": {
     "path": "~0.12.7",
